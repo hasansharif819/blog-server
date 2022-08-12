@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -29,8 +29,8 @@ function verifyJWT(req, res, next) {
     });
 }
 
-async function run(){
-    try{
+async function run() {
+    try {
         await client.connect();
         const blogCollection = client.db('blog_db').collection('blogs');
         const userCollection = client.db('blog_db').collection('users');
@@ -39,7 +39,7 @@ async function run(){
         //Service Added API / update service
         app.post('/blog', async (req, res) => {
             const blog = req.body;
-            const query = { title: blog.title, slug: blog.slug, blog1: blog.blog1, blog2: blog.blog2, blog3: blog.blog3};
+            const query = { user_id: blog.user_id, img: blog.img, title: blog.title, slug: blog.slug, blog1: blog.blog1, blog2: blog.blog2, blog3: blog.blog3 };
             const exists = await blogCollection.findOne(query);
             if (exists) {
                 return res.send({ success: false, order: exists })
@@ -75,22 +75,40 @@ async function run(){
             res.send(blog);
         });
 
+        //query by email
+        app.get('/blog/:email', async (req, res) => {
+            const user_id = req.query.user_id;
+            const query = { user_id: user_id };
+            const bloging = await blogCollection.find(query).toArray();
+            res.send(bloging);
+        });
+
+        //Delete my blog
+        app.delete('/blog/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await blogCollection.deleteOne(query);
+            res.send(result);
+        })
+
         //comment
         app.post('/comment', async (req, res) => {
             const comment = req.body;
-            const query = { comment: comment.comment, client: comment.client, clientName: comment.clientName};
-            const exists = await commentCollection.findOne(query);
-            if (exists) {
-                return res.send({ success: false, order: exists })
-            }
-            else {
-                const result = await commentCollection.insertOne(comment);
-                return res.send({ success: true, result });
-            }
+            const query = { comment: comment.comment, client: comment.client, clientName: comment.clientName, blogId: comment.blogId };
+            const result = await commentCollection.insertOne(comment);
+            return res.send({ success: true, result });
         });
 
+        //get comment
+        app.get('/comment/:blogId', async (req, res) => {
+            const blogId = req.params.blogId;
+            const query = { blogId: blogId };
+            const comment = await commentCollection.find(query).toArray();
+            res.send(comment);
+        })
+
     }
-    finally{
+    finally {
 
     }
 }
