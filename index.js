@@ -70,6 +70,25 @@ async function run() {
             res.send(users);
         });
 
+        //make first admin
+        app.put('/user/admin/:email', async(req, res) => {
+            const email = req.params.email;
+            const filter = { email: email};
+            const updateDoc = {
+                $set: {role: 'admin'}
+            }
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
+        //Delete user
+        app.delete('/user/:_id', async(req, res) => {
+            const id = req.params._id;
+            const query = { _id: ObjectId(id)};
+            const result = await userCollection.deleteOne(query);
+            res.send(result);
+        })
+
         app.get('/blog', async (req, res) => {
             const blog = await blogCollection.find().toArray();
             res.send(blog);
